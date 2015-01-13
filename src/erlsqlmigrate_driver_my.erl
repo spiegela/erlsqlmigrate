@@ -150,9 +150,7 @@ connect([Hostname, Port, Database, Username, Password]) ->
 %% the likelyhood that the migration SQL will contain features with implicit
 %% commits.
 execute_with_success(Conn, Sql, Fun) ->
-  #ok_packet{} = execute(Conn, Sql),
-  Fun(),
-  ok.
+  execute(Conn, Sql), Fun(), ok.
 
 execute(Conn, Title, Sql, Params) when is_binary(Title) ->
   execute(Conn, binary_to_list(Title), Sql, Params);
