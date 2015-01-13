@@ -125,6 +125,7 @@ option_spec_list() ->
      {version,         $V, "Version",       {boolean, false},             "output the version number"},
      {environment,     $e, "environment",   {string,"development"},       "Environment you are running migration on. Defaults to 'development'"},
      {migration_dir,   $m, "migration-dir", {string, MigrationsDefault},  "The directory containing your SQL migration files [./migrations]"},
+     {database,        $d, "database",      {string, false},              "An optional database URI to run migration on. [mysql://root@pass@127.0.0.1:3306/dbname]"},
      {config_dir,      $c, "config-dir",    {string, ConfigDefault},      "Location of your config files [./config]"}
     ].
 
@@ -141,12 +142,23 @@ run(Options, NonOptArgs) ->
                          ConfigDir = proplists:get_value(config_dir, Options),
                          Environment = proplists:get_value(environment, Options),
                          MigDir = proplists:get_value(migration_dir, Options),
-                         {ok, Config} = file:consult(filename:join([ConfigDir,Environment++".config"])),
+                         DBUri = proplists:get_value(database, Options),
+                         Config = get_config(ConfigDir, Environment, DBUri),
                          Mod = ?MODULE,
                          Mod:Cmd(Config, MigDir, Name);
                      error -> usage()
                  end
     end.
+
+get_config(ConfigDir, Environment, false) ->
+  {ok, Config} = file:consult(filename:join([ConfigDir,Environment++".config"])),
+  Config;
+get_config(_ConfigDir, _Environment, Uri) ->
+  {ok, {Scheme, Auth, Host, Port, [$/|DB],[]}} = http_uri:parse(Uri),
+  case re:split(Auth, ":", [{return, list}]) of
+    [User, Pass] -> [{Scheme, [Host, Port, DB, User, Pass]}];
+    [User]       -> [{Scheme, [Host, Port, DB, User]}]
+  end.
 
 %% @spec parse_command_args(List) -> {atom(),string()} | error
 %%       List = [string()]

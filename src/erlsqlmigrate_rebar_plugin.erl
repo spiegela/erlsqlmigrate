@@ -17,11 +17,20 @@
 config(AppFile) ->
   {ok, [{application, _, AppSrc}]} = file:consult(AppFile),
   {env, Env}= proplists:lookup(env, AppSrc),
-  Db  = lists:foldl(fun(E, P) ->
-                      {E, P1} = proplists:lookup(E, P), P1
-                    end, Env, [migrate, environment()] ),
+  Db = db_config(Env, os:getenv("DATABASE")),
   {migration_dir, Dir} = proplists:lookup(migration_dir, Env),
   {Dir, Db}.
+
+db_config(Env, false) ->
+  lists:foldl(fun(E, P) ->
+                {E, P1} = proplists:lookup(E, P), P1
+              end, Env, [database, environment()] );
+db_config(_Env, Uri) ->
+  {ok, {Scheme, Auth, Host, Port, [$/|DB],[]}} = http_uri:parse(Uri),
+  case re:split(Auth, ":", [{return, list}]) of
+    [User, Pass] -> {Scheme, [Host, Port, DB, User, Pass]};
+    [User]       -> {Scheme, [Host, Port, DB, User]}
+  end.
 
 environment() ->
   case os:getenv("ENV") of
