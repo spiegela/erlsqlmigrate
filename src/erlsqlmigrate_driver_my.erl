@@ -71,16 +71,16 @@ create(ConnArgs,_Args) ->
 %% applied it will be skipped.
 %% Ref: http://dev.mysql.com/doc/refman/5.1/en/implicit-commit.html
 up(ConnArgs, Migrations) ->
-  Conn = connect(ConnArgs),
   lists:foreach(
     fun(Mig) ->
+        Conn = connect(ConnArgs),
         case applied(Conn, Mig) of
           true  -> ok;
           false -> Fun = fun() -> update(Conn,Mig) end,
             execute_with_success(Conn, Mig#migration.up, Fun)
         end
+        ok = disconnect(Conn),
     end, Migrations),
-  ok = disconnect(Conn),
   ok.
 
 %% @spec down(Config, Migrations) -> ok
