@@ -78,8 +78,8 @@ up(ConnArgs, Migrations) ->
           true  -> ok;
           false -> Fun = fun() -> update(Conn,Mig) end,
             execute_with_success(Conn, Mig#migration.up, Fun)
-        end
-        ok = disconnect(Conn),
+        end,
+        ok = disconnect(Conn)
     end, Migrations),
   ok.
 
